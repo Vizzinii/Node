@@ -427,8 +427,8 @@ public:
 输入：nums = [1,3,-1,-3,5,3,6,7], k = 3
 输出：[3,3,5,5,6,7]
 
-第一次思路：
-第一次代码：
+第一次思路：创建两个 vector<int> ，一个 bianli 用来遍历整个已给数组 nums ，一个 juice 用来存放最后的结果。 vector 中每次只有三个元素，并且使用对 bianli 进行再遍历得到其内的最大值并返回和存入 juice 中。思路上没有问题，在数据规模小的时候也能ac代码。但在窗口的长度接近数组的长度且二者都较大时，就会因嵌套遍历及其O(k*n)的时间复杂度而导致超时。
+### 第一次代码：
 ```cpp
     vector<int> maxSlidingWindow(vector<int>& nums, int k)
     {
@@ -459,4 +459,575 @@ public:
         }
         return juice;
     }
+```
+
+第二次思路：
+实际上我们不需要在遍历的容器中存放所有的数据，因为题目需要的是最大值，因此我们只要在遍历的容器内存放“可能成为最大值”的元素即可。
+我们想要容器内最左端的元素一直就是我们需要的此时窗口内的最大值。因此想到，我们可以设计出一个“对已给数组的部分元素排好序的容器”。
+遍历到的一个元素准备从容器的右端进入时，倘若其左方的元素比它小，那么在这两个元素共同所处的一切窗口内，左边那个较小的元素永远不可能是最大值，因此此时可以把左方较小的元素从右端入口处踢出。这样循环下去，直到其左边的元素比它大或者容器变空了，此时再把遍历到的这个元素从右边进入容器中。而如果左方的元素比它大，那么直接不把它放入容器内。这样保证了容器内元素从左到右是递减的。
+然而一个元素也有生命周期，这个周期就是包含它的窗口的个数。**一个元素要么没进容器，要么在容器中被右边较大的元素剔除掉，要么排到最左边成为最大值。**那么成为最大值后，如果没有元素来把它比下去，那么它什么时候在最左边离开容器呢？很显然，就是当这个窗口不再包含这个元素的时候，此时也正是这个元素在原数组中成为窗口左方相邻元素的时候。这个很容易在遍历的时候利用“此时遍历到的元素-窗口长度”得到。
+以上剖析了元素的遍历、元素能否进入容器与何时进入容器、元素何时离开容器，而要能做到一端进两端出且先进先出，很容易想到双端队列。这里自己设计一个有特殊功能的队列，它可以判断元素是否进入队列、元素何时离开队列、返回队列最左端的最大值。
+**一个值如果在队列中有在它左方的、比它大的元素。就说明较小的这个元素是比较大的元素慢进来的，而在较小和较大元素仍同处一个窗口的时候，又进来了一个比较小元素大的元素。由此可见，较小的元素要么和左方较大的元素同窗，要么和刚进来的较大的元素同窗，要么和两个都同窗，所以它永不可能在某个窗口中作为最大值，因此完全可以不用维护它，直接把它剔除掉。**
+### AC代码
+```cpp
+class Solution {
+private:
+class myque
+{
+    public:
+    deque<int> que;
+    //弹出的条件是：iff此时窗口应该弹出的元素等于队前元素
+    void pop(int val)
+    {
+        if(val==que.front() && !que.empty())
+        {
+            que.pop_front();
+        }
+    }
+    //压入时：从队最前开始pop掉比应压元素小的，再压入
+    void push(int val)
+    {
+        while(!que.empty() && val > que.back())
+        {
+            que.pop_back();
+        }
+        que.push_back(val);
+    }
+    int max()
+    {
+        return que.front();
+    }
+};
+public:
+    vector<int> maxSlidingWindow(vector<int>& nums, int k)
+    {
+        myque que;
+        vector<int> juice;
+        for(int i=0;i<k;i++)
+        {
+            que.push(nums[i]);
+        }
+        juice.push_back(que.max());
+        for(int i=k;i<nums.size();i++)
+        {
+            que.pop(nums[i-k]);
+            que.push(nums[i]);
+            juice.push_back(que.max());
+        }
+        return juice;
+    }
+};
+```
+# 拾伍 3.无重复字符的最长子串
+题目：给定一个字符串 s ，请你找出其中不含有重复字符的 最长子串 的长度。
+
+思路：仍是滑动窗口类题目，这类题一般设置两个指针来从左到右遍历整个字符串。本题中，**右指针右移的条件是子串中无重复字符，左指针右移的条件是子串中有重复字符。**本来一般做法是在符合左指针右移的条件时，把左指针一格一格向右移动。但这里采用一种省时的解法：由于右指针每次是右移一格，因此只要知道新进来的字符跟原子串内哪一个位置的字符重复就可以。**采用一个长 128 的 vector 来存放每次新进来子串的字符的位置。每次比较左指针与新增字符对应的下标的数字，可以得到新进的字符是否在原子串内有相同的字符，若有则把左指针直接移动到原子串内那个被重复的字符后边一位，此时新子串内就没有重复字符，最后再把当前子串的长度与已得的最长长度比较。**
+
+### AC代码
+```cpp
+    int lengthOfLongestSubstring(string s) 
+    {
+        //左、右指针
+        int left=0;
+        int juice=0;
+        //因为ASCII表内总共有128的字符
+        vector<int> temp(128,0);
+        for(int right=0;right<s.size();right++)
+        {
+            //在未更新 temp[s[right]] 时，把左指针移动到
+            //即将被重复的字符的后面，即 temp[s[right]] 一直是某个元素后面位置的下标
+            left=max(left,temp[s[right]]);
+            //更新新增字符对应所存储的下标，即位置
+            temp[s[right]]=right+1;
+            //更新结果的最新长度
+            juice=max(juice,right-left+1);
+        }
+        return juice;
+    }
+```
+# 拾陆 219.存在重复元素
+
+题目：给你一个整数数组 nums 和一个整数 k ，判断数组中是否存在两个 不同的索引 i 和 j ，满足 nums[i] == nums[j] 且 abs(i - j) <= k 。如果存在，返回 true ；否则，返回 false 。
+示例：
+输入：nums = [1,2,3,1], k = 3
+输出：true
+
+输入：nums = [1,0,1,1], k = 1
+输出：true
+
+输入：nums = [1,2,3,1,2,3], k = 2
+输出：false
+
+思路：与之前的“第五题：两数之和”相同，这里也同时需要存储数组的下标和数值。因此这里用一个 unordered_map ，把数组的数值作为 key ，把数组的下标作为 value 且全都初始化为0 。在向右遍历的时候，每次都把当前遍历到的元素的下标与已存放在 map 中的上一次的下标相比，若不满足 true 条件则更新当前遍历到的元素在 map 中的 value 值，若满足则直接返回 true 。
+
+### AC代码
+```cpp
+    bool containsNearbyDuplicate(vector<int>& nums, int k) 
+    {
+        unordered_map<int,int> m;
+        for(int right=0;right<nums.size();right++)
+        {
+           if(m.count(nums[right])>0)
+           {
+               if(right-m[nums[right]]<=k)
+               {
+                   return true;
+               }
+           } 
+           m[nums[right]]=right;
+        }
+        return false;
+    }
+```
+# 拾柒 977.有序数组的平方
+题目：给你一个按 非递减顺序 排序的整数数组 nums，返回 每个数字的平方 组成的新数组，要求也按 非递减顺序 排序。
+示例：
+输入：nums = [-7,-3,2,3,11]
+输出：[4,9,9,49,121]
+
+思路：cpp有一个自带的 sort 函数，会自动根据情况调用合适的排序算法。因此排序不需要自己写。
+
+### AC代码
+```cpp
+    vector<int> sortedSquares(vector<int>& nums) 
+    {
+        vector<int> juice;
+        for(int num:nums)
+        {
+            juice.push_back(num*num);
+        }
+        sort(juice.begin(),juice.end());
+        return juice;
+    }
+```
+# 拾捌 209.长度最小的子数组
+题目：给定一个含有 n 个正整数的数组和一个正整数 target 。找出该数组中满足其总和大于等于 target 的长度最小的 连续子数组 [numsl, numsl+1, ..., numsr-1, numsr] ，并返回其长度。如果不存在符合条件的子数组，返回 0 。
+
+思路：这是一道经典的利用左右指针的窗口题目。右指针右移的条件是子数组的和小于(<) target ，而左指针右移的条件则是子数组的和大于等于(>=) target 。“和”在右指针右移时要加上当前遍历到的元素，在左指针右移时要减去刚刚离开窗口的元素数值。每次移动右指针都判断如何移动左指针，每次判断和移动左指针后都要比较当前窗口长度与已知最小长度。
+
+### AC代码
+```cpp
+    int minSubArrayLen(int target, vector<int>& nums) 
+    {
+        int juice=INT32_MAX;
+        int left=0;
+        int sum=0;
+        for(int right=0;right<nums.size();right++)
+        {
+            sum+=nums[right];
+            while(sum>=target)
+            {
+                int temp=right-left+1;
+                juice=temp>juice?juice:temp;
+                sum-=nums[left++];
+            }
+        }
+        return juice==INT32_MAX?0:juice;
+    }
+```
+# 拾玖 203.移除链表元素
+题目：给你一个链表的头节点 head 和一个整数 val ，请你删除链表中所有满足 Node.val == val 的节点，并返回 新的头节点 。
+
+思路：要注意的一点是，每次删除节点之后，新指向的节点也同样有可能符合删除的条件。因此要使用 while 而不是 if 来判定是否需要删除，直到指向的节点不再需要被删除为止，不应该用 if ，那样只删除了一次。
+
+### AC代码
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* removeElements(ListNode* head, int val) 
+    {
+        while(head!=NULL && head->val == val)
+        {
+            ListNode * temp = head;
+            head = head->next;
+            delete temp;
+        };
+        ListNode* gues = head;
+        while(gues!=NULL && gues->next!=NULL)
+        {
+            if(gues->next->val == val && gues->next->next!=NULL)
+            {
+                ListNode* tem = gues->next;
+                gues->next = gues->next->next;
+                delete tem;
+            }
+            else if(gues->next->val == val && gues->next->next==NULL)
+            {
+                delete gues->next;
+                gues->next = NULL;
+            }
+            else 
+            {
+               gues=gues->next; 
+            }
+        };
+        return head;
+    }
+};
+```
+
+# 贰拾 206.反转链表
+题目：给你单链表的头节点 head ，请你反转链表，并返回反转后的链表。
+
+思路：设置两个指针，一个 **pre 指针指向当前节点的前一个节点A**，一个 **cur 指针指向当前节点B**。当 cur 非空时，将 **cur 复制给一个新指针 temp 指向节点B**，**然后 cur 指向下一个节点C**， 此时让节点 B 的指针域指向前一个元素 A ，再把 temp 复制给 pre 。
+
+### AC代码
+```cpp
+/**
+ * Definition for singly-linked list.
+ * struct ListNode {
+ *     int val;
+ *     ListNode *next;
+ *     ListNode() : val(0), next(nullptr) {}
+ *     ListNode(int x) : val(x), next(nullptr) {}
+ *     ListNode(int x, ListNode *next) : val(x), next(next) {}
+ * };
+ */
+class Solution {
+public:
+    ListNode* reverseList(ListNode* head) 
+    {
+        ListNode* pre = NULL;
+        ListNode* cur = head;
+        while(cur!=NULL)
+        {
+            ListNode* temp = cur;
+            cur = cur->next;
+            temp->next = pre;
+            pre = temp;
+        }
+        return pre;
+    }
+};
+```
+
+# 贰拾壹 LCR_139.训练计划Ⅰ
+题目：教练使用整数数组 actions 记录一系列核心肌群训练项目编号。为增强训练趣味性，需要将所有奇数编号训练项目调整至偶数编号训练项目之前。请将调整后的训练项目编号以 数组 形式返回。
+示例：输入：actions = [1,2,3,4,5]
+输出：[1,3,5,2,4] 
+解释：为正确答案之一
+
+思路：遍历原数组 actions ，把奇数与偶数分别 push_back 进两个数组中，遍历完成之后把偶数数组的每个元素 push_back 到奇数数组的后面。
+
+### AC代码
+```cpp
+class Solution {
+public:
+    vector<int> trainingPlan(vector<int>& actions) 
+    {
+        vector<int> v1;
+        vector<int> v2;
+        for(int i=0;i<actions.size();i++)
+        {
+            if(actions[i]%2==1)//奇数
+            {
+                v1.push_back(actions[i]);
+            }
+            else
+            {
+                v2.push_back(actions[i]);
+            }
+        }
+        for(int i=0;i<v2.size();i++)
+        {
+            v1.push_back(v2[i]);
+        }
+        return v1;
+    }
+};
+```
+
+# 贰拾贰 LCR_178.训练计划Ⅵ
+题目：教学过程中，教练示范一次，学员跟做三次。该过程被混乱剪辑后，记录于数组 actions，其中 actions[i] 表示做出该动作的人员编号。请返回教练的编号。
+
+示例：输入：actions = [12, 1, 6, 12, 6, 12, 6] ； 输出：1
+
+思路：创建一个 unordered_map ，将数组的元素作为 key ，元素出现的次数作为 value 。在遍历数组的时候，每次把这个元素的 value 进行加一操作。遍历结束之后，只要找到 value 为一的 key 值就完成了题意。
+
+注意：
+①对某个 key 的 value 进行加一操作，语法是M[actions[i]]+=1，其中 M 是 unordered_map ， actions[i] 是 key 值。
+②设 inner 是一个 unordered_map 容器类型的迭代器，那么 inner->first 指的是 key 值，inner->second 指的是 value 值。
+### AC代码
+```cpp
+class Solution {
+public:
+    int trainingPlan(vector<int>& actions) 
+    {
+        unordered_map<int,int> M;
+        for(int i=0 ; i<actions.size();i++)
+        {
+            M[actions[i]]+=1;
+        }
+        for(auto inner = M.begin();inner!=M.end();inner++)
+        {
+            if(inner->second==1)
+            {
+                return inner->first;
+            }
+        }
+        return 0;
+    }
+};
+```
+
+# 贰拾叁 438.找到字符串中所有字母异位词
+题目：给定两个字符串 s 和 p，找到 s 中所有 p 的 异位词 的子串，返回这些子串的起始索引。不考虑答案输出的顺序。异位词 指由相同字母重排列形成的字符串（包括相同的字符串）。
+
+示例：
+输入: s = "cbaebabacd", p = "abc"
+输出: [0,6]
+解释:
+起始索引等于 0 的子串是 "cba", 它是 "abc" 的异位词。
+起始索引等于 6 的子串是 "bac", 它是 "abc" 的异位词。
+
+输入: s = "abab", p = "ab"
+输出: [0,1,2]
+解释:
+起始索引等于 0 的子串是 "ab", 它是 "ab" 的异位词。
+起始索引等于 1 的子串是 "ba", 它是 "ab" 的异位词。
+起始索引等于 2 的子串是 "ab", 它是 "ab" 的异位词。
+
+思路：设立两个大小为 26 的 int 数组 ss 和 pp ，数组 pp 可以存放字符串 p 中各个字母出现的次数。然后看成有一个固定大小的滑动窗口在向右滑动，数组 ss 存放的是这个滑动窗口中每个元素出现的次数。滑动窗口遍历字符串 s ，每次右移都右进一个、左边出一个元素。当数组 ss 和 pp 完全相同时，此时滑动窗口的最左边位置就是一个起始索引。
+
+### AC 代码
+```cpp
+class Solution {
+public:
+    vector<int> findAnagrams(string s, string p) 
+    {
+        vector<int> juice;
+        vector<int> ss(26,0);
+        vector<int> pp(26,0);
+
+        if(s.size()<p.size())
+        {
+            return juice;
+        }
+        for(int i=0;i<p.size();i++)
+        {
+            pp[p[i]-'a']+=1;
+            ss[s[i]-'a']+=1;
+        }
+        if(ss==pp)
+        {
+            juice.push_back(0);
+        }
+        for(int i=p.size();i<s.size();i++)
+        {
+            ss[s[i-p.size()]-'a']-=1;
+            ss[s[i]-'a']+=1;
+            if(ss==pp)
+            {
+            juice.push_back(i-p.size()+1);
+            }
+        }
+        return juice;
+    }
+};
+```
+
+# 贰拾肆 260.只出现一次的数字Ⅲ
+题目：给你一个整数数组 nums，其中恰好有两个元素只出现一次，其余所有元素均出现两次。 找出只出现一次的那两个元素。你可以按 任意顺序 返回答案。**你必须设计并实现线性时间复杂度的算法且仅使用常量额外空间来解决此问题。**
+
+示例：
+输入：nums = [1,2,1,3,2,5]
+输出：[3,5]
+解释：[5, 3] 也是有效的答案。
+
+思路：设置一个 unordered_map 来存放数组的元素作为 key 和元素出现的次数作为 value 。遍历数组之后，遍历 unordered_map ，当当前迭代器的 value 为一的时候，则将当前迭代器的 key 压入到结果数组中。遍历 unordered_map 之后返回结果数组，结果数组就是答案。
+以上的算法的两次遍历都是 O(n) 的时间复杂度，使用的额外空间来自 unordered_map ，最多不超过 10 对映射，实现了常量额外空间。
+
+### AC代码
+```cpp
+class Solution {
+public:
+    vector<int> singleNumber(vector<int>& nums) 
+    {
+        vector<int> juice;
+        unordered_map<int,int> M;
+        for(int i=0 ; i<nums.size();i++)
+        {
+            M[nums[i]]+=1;
+        }
+        for(auto inner = M.begin();inner!=M.end();inner++)
+        {
+            if(inner->second==1)
+            {
+                juice.push_back(inner->first);
+            }
+            if(juice.size()==2)
+            {
+                break;
+            }
+        }
+return juice;
+    }
+};
+```
+
+# 贰拾伍 567.字符串的排列
+题目：给你两个字符串 s1 和 s2 ，写一个函数来判断 s2 是否包含 s1 的排列。如果是，返回 true ；否则，返回 false 。换句话说，s1 的排列之一是 s2 的 子串 。即 s1 的某个异位字符串是 s2 的子串。
+
+思路：设置两个 int 数组 a1 与 a2 ，a1 存放 s1 中每个元素出现的次数。想象一个固定大小的滑动窗口从左往右遍历字符串 s2 ，a2 存放滑动窗口中每个元素出现的次数。当数组 a1 与 a2 相等时，此时说明字符串 s2 中包含 s1 的异位字符串；若遍历完成之后还没有出现数组 a1 与 a2 相等的情况，则说明不存在符合要求的情形。**记得判断字符串 s2 长度小于 s1 的情况。**
+
+### AC代码
+ ```cpp
+ class Solution {
+public:
+    bool checkInclusion(string s1, string s2) 
+    {
+        vector<int> a1(26,0);
+        vector<int> a2(26,0);
+        if(s1.size()>s2.size())
+        {
+            return false;
+        }
+        for(int i=0;i<s1.size();i++)
+        {
+            a2[s2[i]-'a']+=1;
+            a1[s1[i]-'a']+=1;//不变
+        }
+        if(a1==a2)
+        {
+            return true;
+        }
+        for(int i=s1.size();i<s2.size();i++)
+        {
+            a2[s2[i]-'a']+=1;
+            a2[s2[i-s1.size()]-'a']-=1;
+            if(a1==a2)
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+};
+ ```
+
+# 贰拾陆 26.删除有序数组中的重复项
+题目：给你一个 非严格递增排列 的数组 nums ，请你**原地**删除重复出现的元素，使每个元素 只出现一次 ，**返回删除后数组的新长度**。元素的 相对顺序 应该保持 一致 。然后返回 nums 中唯一元素的个数。
+
+示例：
+输入：nums = [1,1,2]
+输出：2, nums = [1,2,_]
+解释：函数应该返回新的长度 2 ，并且原数组 nums 的前两个元素被修改为 1, 2 。不需要考虑数组中超出新长度后面的元素。
+
+输入：nums = [0,0,1,1,1,2,2,3,3,4]
+输出：5, nums = [0,1,2,3,4]
+解释：函数应该返回新的长度 5 ， 并且原数组 nums 的前五个元素被修改为 0, 1, 2, 3, 4 。不需要考虑数组中超出新长度后面的元素。
+
+注意：题目要求在原数组中删除，通过测试得知，测试案例会调用传进来的数组检查，因此新建数组会导致全错。
+
+### AC代码
+```cpp
+class Solution {
+public:
+    int removeDuplicates(vector<int>& nums) 
+    {
+        int temp=0;
+        for(auto n : nums)
+        {
+            if(temp<1 || n!=nums[temp-1])
+            {
+                nums[temp++] = n;
+            }
+        }
+        return temp;
+    }
+};
+```
+思路：在 C++ 中，**使用基于范围的 for 循环遍历数组时，循环变量是数组元素的副本**，而不是指向数组元素的指针或引用。因此，**在循环体内部修改循环变量的值不会影响原始数组中的元素**。但是，在以上代码中，使用了基于范围的 for 循环遍历数组 nums，并在循环体内部修改了数组元素的值。这是因为在这个例子中，使用了引用类型 vector<int>& 来传递数组参数。这意味着在函数内部对数组元素的修改会直接反映到原始数组中。
+变量 temp 用于记录新数组中已存储的元素个数。在循环开始时，temp 的值为 0。在每次循环中，变量 n 用于存储当前遍历到的元素。**如果 temp 小于 1 或者 n 不等于新数组中最后一个元素**，则将 n 存储到新数组中，并将 temp 的值加 1。
+
+
+# 贰拾柒 80.删除有序数组中的重复项
+题目：给你一个有序数组 nums ，请你 原地 删除重复出现的元素，使得出现次数超过两次的元素**只出现两次** ，返回删除后数组的新长度。**不要使用额外的数组空间，你必须在 原地 修改输入数组 并在使用 O(1) 额外空间的条件下完成。**
+
+示例：
+输入：nums = [1,1,1,2,2,3]
+输出：5, nums = [1,1,2,2,3]
+解释：函数应返回新长度 length = 5, 并且原数组的前五个元素被修改为 1, 1, 2, 2, 3。 不需要考虑数组中超出新长度后面的元素。
+输入：nums = [0,0,1,1,1,1,2,3,3]
+输出：7, nums = [0,0,1,1,2,3,3]
+解释：函数应返回新长度 length = 7, 并且原数组的前五个元素被修改为 0, 0, 1, 1, 2, 3, 3。不需要考虑数组中超出新长度后面的元素。
+
+思路：与上一题一样的思路，改变的是判断条件。即上一题是**temp 小于 1 或者 n 不等于新数组中最后一个元素**，本题应为**temp 小于 1 或者 n 不等于新数组的倒数第二个元素**。
+
+### AC代码
+```cpp
+class Solution {
+public:
+    int removeDuplicates(vector<int>& nums) 
+    {
+        int i=0;
+        for(auto n : nums)
+        {
+            if(i<2 || n!=nums[i-2])
+            {
+                nums[i++] = n;
+            }
+        }
+        return i;
+    }
+};
+```
+
+# 贰拾捌 102.二叉树的层序遍历
+题目：给你二叉树的根节点 root ，返回其节点值的 层序遍历 。 （即逐层地，从左到右访问所有节点）。
+
+思路：既然是层序遍历，那么就要每次输出同一层的所有节点值。同一层节点的父节点也是同一层节点，同理递推得，最终祖先一定是根节点的两个子节点。又因为这里需要从左到右分析节点和输出节点值，因此采用一个队列来存放同一层的节点。当同一层节点全部入队后，取得此时队列长度，再根据长度对队列内的节点进行其子节点的入队。
+当函数取得根节点时，先把根节点入队。此时队列长度为 1 ，因此循环一次。循环体内操作是把节点的左右子节点入队，并把该节点的值 push_back 到数组，之后把该节点出队。第一轮循环结束后，此时队列中有两个元素（分别是根节点的左右子节点），因此循环两次，把两个子节点各自的子节点入队，同时把子节点自己出队。第二轮循环结束后，此时队列中有四个元素，因此循环四次，把此时队列中节点的子节点入队，并把自己出队…………。这样重复，直到队列为空，此时就遍历完树的所有节点。
+
+### AC代码
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    vector<vector<int>> levelOrder(TreeNode* root) {
+        queue<TreeNode*> que;
+        if(root!=NULL)
+        {
+            que.push(root);
+        }
+        vector<vector<int>> result;
+        while(!que.empty())
+        {
+            int size=que.size();
+            vector<int> vec;
+            for(int i=0;i<size;i++)
+            {
+                TreeNode* node = que.front();
+                que.pop();
+                vec.push_back(node->val);//本身的值
+            if (node->left) 
+            {que.push(node->left);}
+            if (node->right) 
+            {que.push(node->right);}
+            }
+            result.push_back(vec);
+        }
+        return result;
+    }
+};
 ```
