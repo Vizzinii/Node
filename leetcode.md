@@ -1031,3 +1031,170 @@ public:
     }
 };
 ```
+
+# 贰拾玖 222.完全二叉树的节点个数
+题目：给你一棵 完全二叉树 的根节点 root ，求出该树的节点个数。
+完全二叉树 的定义如下：在完全二叉树中，除了最底层节点可能没填满外，其余每层节点数都达到最大值，并且最下面一层的节点都集中在该层最左边的若干位置。若最底层为第 h 层，则该层包含 1~ 2h 个节点。
+
+思路：做题手法与二叉树的层序遍历相似，由于是完全二叉树，因此节点在每一层都是从左到右排列的。唯一的不同是：层序遍历时记录的是该节点的值，而求节点个数的时候则是每次对节点数量加一。
+
+### AC代码
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int countNodes(TreeNode* root) 
+    {
+        queue<TreeNode*> que;
+        int juice=0;
+        if(root!=NULL)
+        {
+            que.push(root);
+            juice+=1;
+        }
+        while(!que.empty())
+        {
+            int temp=que.size();
+            for(int i=0;i<temp;i++)
+            {
+                TreeNode* ff=que.front();
+                que.pop();
+                //juice+=1;
+                if(ff->left)
+                {
+                    que.push(ff->left);
+                    juice+=1;
+                }
+                if(ff->right)
+                {
+                    que.push(ff->right);
+                    juice+=1;
+                }
+
+            }
+        }
+        return juice;
+    }
+};
+```
+注意，这里没有选择在节点出列时对结果加一，因为如果查询到没有节点的树就会报错，因此这里选择在节点入列的时候对结果加一。
+
+# 叁拾 404.左叶子之和
+题目：给定二叉树的根节点 root ，返回所有左叶子之和。
+
+思路：**首先注意到是左叶子，而不是左子树上的节点。**左叶子节点是所有在某个节点的左叶子位置，且没有子节点的节点。
+判断是否左叶子节点，要经过两层判断。第一层是对节点 A 判断是否存在左子节点 B ，第二层是判断节点 B 是否存在子节点。
+这里选择把节点 A 当做当前遍历的节点而不是节点 B 。
+函数内部首先判断当前遍历的节点 A 的左子节点 B 是否存在，然后判断左子节点 B 是否存在子节点。完成对左子节点 B 的判断之后，按顺序对左子节点 B 的左子节点 BL 、左子节点 B 的右子节点 BR 、本节点 A 的右子节点 AR 进行递归。最后返回相加结果。
+
+### AC代码
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int getSum(TreeNode* node)
+    {
+        int juice=0;
+        if(node->left)
+        {
+            if(node->left->left==NULL && node->left->right==NULL)
+            {
+                juice+=node->left->val;
+            }
+            //juice+=node->left->val;
+            juice+=getSum(node->left);
+        }
+        if(node->right)
+        {
+            juice+=getSum(node->right);
+        }
+        return juice;
+    }
+
+    int sumOfLeftLeaves(TreeNode* root) 
+    {
+        int juice=getSum(root);
+        return juice;
+
+    }
+};
+```
+
+# 叁拾壹 513.找树左下角的值
+题目：给定一个二叉树的 根节点 root，请找出该二叉树的 最底层 最左边 节点的值。假设二叉树中至少有一个节点。
+
+思路：最底层、最左边，很自然地想到用层序遍历的思路，记录二叉树的深度，同时层序遍历二叉树。最后需要返回二维数组左下方的数据即可。
+
+### AC代码
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int findBottomLeftValue(TreeNode* root) 
+    {
+        queue<TreeNode*> que;
+        int depth=0;
+        vector<vector<int>> vec;
+        if(root!=NULL)
+        {
+            que.push(root);
+        }
+        while(!que.empty())
+        {
+            vector<int> ve;
+            int temp=que.size();
+            for(int i=0;i<temp;i++)
+            {
+                TreeNode* ff=que.front();
+                ve.push_back(ff->val);
+                que.pop();
+                if(ff->left)
+                {
+                    que.push(ff->left);
+                }
+                if(ff->right)
+                {
+                    que.push(ff->right);
+                }
+            }
+            vec.push_back(ve);
+            depth+=1;
+        }
+        return vec[depth-1][0];
+    }
+};
+```
+
+# 叁拾贰 104.二叉树的最大深度
+题目：给定一个二叉树 root ，返回其最大深度。
+二叉树的 最大深度 是指从根节点到最远叶子节点的最长路径上的节点数。
