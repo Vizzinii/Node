@@ -1095,7 +1095,7 @@ public:
 思路：**首先注意到是左叶子，而不是左子树上的节点。**左叶子节点是所有在某个节点的左叶子位置，且没有子节点的节点。
 判断是否左叶子节点，要经过两层判断。第一层是对节点 A 判断是否存在左子节点 B ，第二层是判断节点 B 是否存在子节点。
 这里选择把节点 A 当做当前遍历的节点而不是节点 B 。
-函数内部首先判断当前遍历的节点 A 的左子节点 B 是否存在，然后判断左子节点 B 是否存在子节点。完成对左子节点 B 的判断之后，按顺序对左子节点 B 的左子节点 BL 、左子节点 B 的右子节点 BR 、本节点 A 的右子节点 AR 进行递归。最后返回相加结果。
+函数内部首先判断当前遍历的节点 A 的左子节点 B 是否存在，然后判断左子节点 B 是否存在子节点。完成对左子节点 B 的判断之后，按顺序对左子节点 B 的左子节点 BL 、左子节点 B 的右子节点 BR 、本节点 A 的右子节点 AR 进行递归，类似前序遍历。最后返回相加结果。
 
 ### AC代码
 ```cpp
@@ -1198,3 +1198,271 @@ public:
 # 叁拾贰 104.二叉树的最大深度
 题目：给定一个二叉树 root ，返回其最大深度。
 二叉树的 最大深度 是指从根节点到最远叶子节点的最长路径上的节点数。
+
+思路：实际上根节点的高度就是二叉树的最大深度。
+使用前序遍历方法，就是从上往下找，每次把当前路径的最大深度与已有的最大深度比较，直到找遍所有路径。
+使用后序遍历方法，从最底层开始遍历：从下往上，每个节点的高度就是该节点的左右子树中的最大高度加一，然后返回该节点的高度。最后得到根节点的高度就是二叉树的最大深度。
+
+### AC代码
+```cpp
+//前序遍历
+class solution {
+public:
+    int result;
+    void getdepth(TreeNode* node, int depth) {
+        result = depth > result ? depth : result; // 中
+
+        if (node->left == NULL && node->right == NULL) return ;
+
+        if (node->left) { // 左
+            depth++;    // 深度+1
+            getdepth(node->left, depth);
+            depth--;    // 回溯，深度-1
+        }
+        if (node->right) { // 右
+            depth++;    // 深度+1
+            getdepth(node->right, depth);
+            depth--;    // 回溯，深度-1
+        }
+        return ;
+    }
+    int maxDepth(TreeNode* root) {
+        result = 0;
+        if (root == NULL) return result;
+        getdepth(root, 1);
+        return result;
+    }
+};
+```
+```cpp
+//后序遍历
+class solution {
+public:
+    int getdepth(TreeNode* node) {
+        if (node == NULL) return 0;
+        int leftdepth = getdepth(node->left);       // 左
+        int rightdepth = getdepth(node->right);     // 右
+        int depth = 1 + max(leftdepth, rightdepth); // 中
+        return depth;
+    }
+    int maxDepth(TreeNode* root) {
+        return getdepth(root);
+    }
+};
+```
+
+# 叁拾叁 559.N叉树的最大深度
+给定一个 N 叉树，找到其最大深度。
+N 叉树中每个节点的子节点数目不一定相同，每个节点有一个存放子节点的vector。
+
+思路:使用 N叉树 的后序遍历，对从最底层开始得到每个节点的所有子节点的最大高度，再加一得到当前子节点的最大高度，最后得到根节点的最大高度就是 N叉树 的最大深度。
+
+### AC代码
+```cpp
+/*
+// Definition for a Node.
+class Node {
+public:
+    int val;
+    vector<Node*> children;
+
+    Node() {}
+
+    Node(int _val) {
+        val = _val;
+    }
+
+    Node(int _val, vector<Node*> _children) {
+        val = _val;
+        children = _children;
+    }
+};
+*/
+
+class Solution {
+public:
+    int maxDepth(Node* root) 
+    {
+        int juice=0;
+        if(root==NULL)
+        {
+            return 0;
+        } 
+        int chjuice=0;   
+        for(auto child : root->children)
+        {
+            int temp=maxDepth(child);
+            chjuice=max(chjuice,temp);
+        }
+        juice=chjuice+1;
+        return juice;
+    }
+};
+```
+
+# 叁拾肆 111.二叉树的最小深度
+题目：给定一个二叉树，找出其最小深度。
+最小深度是从根节点到最近叶子节点的最短路径上的节点数量。
+
+思路：大体思路与最大深度类似，最小深度是取左右节点中的较小值加一。
+但是有一点不同：如果一个节点 A 存在且仅存在一个子节点 B ，那么这个节点 A 就不是叶子节点，此时如果仍然取左右节点中的较小值加一，那么这个节点的高度就会变成空节点的高度加一，但这不是正确的结果。**正确做法是：当且仅当节点 A 存在一个子节点 B 时，节点 A 的高度等于它的子节点 B 的高度加一。而当 A 存在两个子节点或者不存在子节点时，节点 A 的高度就等于左右子节点的最小高度加一。**
+
+### AC代码
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+public:
+    int minDepth(TreeNode* root) 
+    {
+        int juice=0;
+        if(root==NULL)
+        {
+            return 0;
+        }
+        int ll=minDepth(root->left);
+        int rr=minDepth(root->right);
+        if(root->left==NULL)
+        {
+            juice=rr+1;
+        }
+        else if(root->right==NULL)
+        {
+            juice=ll+1;
+        }
+        else
+        {
+        juice=min(ll,rr)+1;
+        }
+        return juice;
+
+    }
+};
+```
+
+# 叁拾伍 501.二叉搜索树中的众数
+题目：给你一个含重复值的二叉搜索树（BST）的根节点 root ，找出并返回 BST 中的所有 众数（即，出现频率最高的元素）。如果树中有不止一个众数，可以按 任意顺序 返回。
+
+思路：第一种方法是我自己最开始想到的暴力解法，遍历一遍整棵树，用一个 map 来存放每一个出现的值及其次数，遍历完成以后把 map 中的key 和 value 分别存为一个 vector ，最后找出 vrctor 中最大的值及其对应的 key 值，从而得到众数。这样的暴力解法无可非议，但是这对于任一个数组都适用，既然已经给了我一个二叉搜索树，那我何必再去暴力解决呢？费力不讨好。
+**第二种方法**：
+思考一下我们可以得知，二叉搜索树按照中序遍历，那么就会是一个有序数组。其中元素是按照非递减的顺序排列。
+既然是有序数组，那么我们可以用两个指针，分别指向相邻的两个元素：当前遍历元素 cur 和上一个被遍历的元素 pre 。当 cur 的值与 pre 的值相同时，说明当前遍历到的值 cur->val 又出现了一遍。此时把记录当前元素出现次数的 count 加一。
+当 count 等于已有的最大出现次数 Maxcount 时，把当前遍历到的元素值放入结果容器中。如果当前元素值继续出现，就会出现 count 大于 Maxcount 的情况，此时就要把 Maxcount 更新为新的 count ，然后把已有的结果容器清空，再把当前元素值放入结果容器中。
+注意：
+- 以上的比较步骤只在对当前节点操作的时候进行，对左右子节点只有遍历操作。
+- pre 指针初始化为 NULL ，count在第一次对当前节点进行判断的时候初始化为 1 。
+- 由于这个结果容器和最大次数 Maxcount 都是实时更新的，因此实际上只需要遍历一次二叉树就能得出结果，而且 Maxcount 确实会一直是当前已有的最大次数。
+  
+### AC代码
+```cpp
+//暴力解法
+class Solution {
+private:
+    void searchBST(TreeNode* cur, unordered_map<int, int>& map) 
+{ // 前序遍历
+    if (cur == NULL) return ;
+    map[cur->val]++; // 统计元素频率
+    searchBST(cur->left, map);
+    searchBST(cur->right, map);
+    return ;
+}
+    bool static cmp (const pair<int, int>& a, const pair<int, int>& b) 
+{
+    return a.second > b.second;
+}
+public:
+    vector<int> findMode(TreeNode* root) 
+    {
+        unordered_map<int, int> map; // key:元素，value:出现频率
+        vector<int> result;
+        if (root == NULL) return result;
+        searchBST(root, map);
+        vector<pair<int, int>> vec(map.begin(), map.end());
+        sort(vec.begin(), vec.end(), cmp); // 给频率排个序
+        result.push_back(vec[0].first);
+        for (int i = 1; i < vec.size(); i++) 
+        {
+            // 取最高的放到result数组中
+            if (vec[i].second == vec[0].second) result.push_back(vec[i].first);
+            else break;
+        }
+        return result;
+    }
+};
+```
+```cpp
+//利用二叉搜索树的特性进行中序遍历的解法
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+private:
+        TreeNode* pre=NULL;
+        int count =0;
+        int Maxcount =0;
+        vector<int> juice;
+    void travel(TreeNode * cur)
+    {
+        if(cur==NULL)
+        {
+            return ;
+        }
+        if(cur->left)
+        {
+            travel(cur->left);
+        }
+        //下面是重头戏，是对当前节点的分析
+        if(pre==NULL)
+        {
+            count=1;
+        }
+        else if(cur->val == pre->val)
+        {
+            count+=1;
+        }
+        else
+        {
+            count=1;
+        }
+        pre=cur;
+        if(count==Maxcount)
+        {
+            juice.push_back(cur->val);
+        }
+        if(count>Maxcount)
+        {
+            Maxcount=count;
+            juice.clear();
+            juice.push_back(cur->val);
+        }
+        if(cur->right)
+        {
+            travel(cur->right);
+        }
+    }
+
+public:
+    vector<int> findMode(TreeNode* root) 
+    {
+        travel(root);
+        return juice;
+    }
+};
+```
