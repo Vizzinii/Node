@@ -1466,3 +1466,66 @@ public:
     }
 };
 ```
+
+# 叁拾陆 530.二叉搜索树的最小绝对差
+题目：给你一个二叉搜索树的根节点 root ，返回 树中任意两不同节点值之间的最小差值 。差值是一个正数，其数值等于两值之差的绝对值。
+
+思路：有了上一道题的双指针法，这道题我只用了不到半分钟就得出正确思路。我们想象一下，一棵二叉搜索树，按照中序遍历的话就是一个有序的非递减数列。因此最小的差值一定会出现在数列中相邻的数中。所以很容易得到我们要做的事：每次得到两个指针 pre 和 cur 的差值，再用一个最小值来每次作比较。中序遍历一遍二叉搜索树即可得到答案。
+tips：在遇到对二叉搜索树进行操作的题目时，首先一定要想到中序遍历搭配双指针。
+
+### AC代码
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution {
+private:
+    TreeNode * pre = NULL;
+    int discount=0;
+    int MinDiscount=0;
+    void travel(TreeNode* cur)
+    {
+        if(cur==NULL)
+        {
+            return ;
+        }
+        if(cur->left!=NULL)
+        {
+            travel(cur->left);
+        }
+        //对当前节点的操作
+        if(pre==NULL)
+        {
+            MinDiscount=100000;
+        }
+        else if(cur->val-pre->val < MinDiscount)
+        {
+            MinDiscount=cur->val-pre->val;
+        }
+        else
+        {
+            MinDiscount=MinDiscount;
+        }
+
+        pre=cur;
+        if(cur->right!=NULL)
+        {
+            travel(cur->right);
+        }
+    }
+public:
+    int getMinimumDifference(TreeNode* root) 
+    {
+        travel(root);
+        return MinDiscount;
+    }
+};
+```
