@@ -1529,3 +1529,77 @@ public:
     }
 };
 ```
+
+# 叁拾柒 98. 验证二叉搜索树
+题目：给你一个二叉树的根节点 root ，判断其是否是一个有效的二叉搜索树。有效 二叉搜索树定义如下：
+节点的左子树只包含 小于 当前节点的数。
+节点的右子树只包含 大于 当前节点的数。
+所有左子树和右子树自身必须也是二叉搜索树。
+
+思路：验证二叉搜索树是否成立，实际上就是验证中序遍历树得到的数列是否是一个递增数列。判断是否递增的最直接方法，就是利用双指针法，在遍历树的时候，每遍历到一个节点都对当前节点和上一个节点进行比较，并将比较结果每次都更新到一个私有变量里。中序遍历结束后只需要对这个遍历的值进行一次简单的判断，就能验证是否二叉搜索树。
+
+### AC代码
+```cpp
+/**
+ * Definition for a binary tree node.
+ * struct TreeNode {
+ *     int val;
+ *     TreeNode *left;
+ *     TreeNode *right;
+ *     TreeNode() : val(0), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x) : val(x), left(nullptr), right(nullptr) {}
+ *     TreeNode(int x, TreeNode *left, TreeNode *right) : val(x), left(left), right(right) {}
+ * };
+ */
+class Solution 
+{
+private:
+    TreeNode * pre = NULL;
+    int whether=0;
+    void travel(TreeNode* cur)
+    {
+        if(cur==NULL)
+        {
+            return ;
+        }
+        if(cur->left!=NULL)
+        {
+            travel(cur->left);
+        }
+        //对当前节点的操作
+        if(pre==NULL)
+        {
+            whether=0;
+        }
+        else if(cur->val<=pre->val)
+        {
+            whether=1;
+        }
+        else
+        {
+            whether=whether;
+        }
+
+        pre=cur;
+        if(cur->right!=NULL)
+        {
+            travel(cur->right);
+        }
+    }
+public:
+    bool isValidBST(TreeNode* root) 
+    {
+        travel(root);
+        bool juice;
+        if(whether==1)
+        {
+            juice = false;
+        }
+        else
+        {
+            juice = true;
+        }
+        return juice;
+    }
+};
+```
