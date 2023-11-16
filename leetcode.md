@@ -1603,3 +1603,239 @@ public:
     }
 };
 ```
+
+# 叁拾捌 77.组合
+题目：给定两个整数 n 和 k，返回范围 [1, n] 中所有可能的 k 个数的组合。可以按照任意顺序返回答案。
+
+示例 1：
+
+输入：n = 4, k = 2
+输出：
+[
+  [2,4],
+  [3,4],
+  [2,3],
+  [1,2],
+  [1,3],
+  [1,4],
+]
+
+递归最本质的三部曲：
+- 确定递归函数的参数和返回值
+- 确定递归函数的终止条件
+- 确定单层递归逻辑。
+
+思路：我们把递归回溯想象成一棵树，每进行一层递归，就是到达了树的下一层；然后下一层又嵌套一个 for 循环，每运行一次循环体就又进行了一层递归到达下一层。一言蔽之： for 循环内有递归，每次递归又要再次运行 for 循环。
+首先很容易理解，这道题需要用一个二维数组来存放最终结果，用一个一维数组来存放每一个符合要求的结果。大致思路是：把可能的值往结果数组里放，当触及边界条件时存放当前结果，然后把最后一位的数拿出来，执行最后一位所在 for 循环的加加操作————换成其他可能的数。当最后一位没有可能的数之后，先后把倒数第一、倒数第二位的数取出，执行倒数第二位所在 for 循环的加加操作。
+在这道题中，树中的每个节点的 value 就是当前状态下可以进行当前层 for 循环的元素，而每根枝条就是一次 push_back 或 pop_back 操作。那怎么知道每一个节点内可以操作的数据呢？这里用一个 startindex 来解决， startindex 在我每次放一个值进数组的时候，设置放完后的可操作数的起始值————为放进去的数的下一位，这样可以保证不会有重复的结果。
+综上可得：
+- 递归函数的参数：已知数组、目标结果的位数、下次操作的起始位置 startindex 。
+- 递归函数的返回值：返回值为空，但在递归时需要存放符合要求的结果到结果集里面。
+- 递归函数的终止条件：结果数组内的数值个数 == 目标组合的数值个数
+- 单层递归逻辑：对 for 循环的每个值，进行递归————对下一个数位进行 for 循环，直到 return 。
+
+
+### AC代码
+```cpp
+class Solution {
+private:
+    int startindex=1;
+    vector<vector<int>> juice;
+    vector<int> temp;
+    void backtracking(int n,int k,int startindex)
+    {
+        if(temp.size()==k)
+        {
+            juice.push_back(temp);
+            //temp.pop_back();
+            return;
+        }
+        for(int i=startindex;i<=n;i++)
+        {
+            temp.push_back(i);
+            backtracking(n,k,i+1);
+            temp.pop_back();
+        }
+    }
+public:
+    vector<vector<int>> combine(int n, int k) 
+    {
+        backtracking(n,k,startindex);
+        return juice;
+
+    }
+};
+```
+
+# 叁拾玖 216.组合总和Ⅲ
+题目：找出所有相加之和为 n 的 k 个数的组合，且满足下列条件：
+只使用数字1到9
+每个数字 最多使用一次 
+返回 所有可能的有效组合的列表 。该列表不能包含相同的组合两次，组合可以以任何顺序返回。
+
+思路：注意到这里的要求：每个数字最多使用一次，就说明 startindex 的确定逻辑还是“不重复”，也就是当前存放元素的下一个。
+整理可得：
+- 递归函数的参数：已知数组、目标结果的位数、目标和、下次操作的起始位置 startindex 。
+- 递归函数的返回值：返回值为空，但在递归时需要存放符合要求的结果到结果集里面。
+- 递归函数的终止条件：结果数组内的数值个数 == 目标组合的数值个数 ，无论 sum 与 target 是否相等都要返回，区别只有相等时存放结果、不相等时不存放结果。
+- 单层递归逻辑：对 for 循环的每个值，进行递归————对下一个数位进行 for 循环，直到 return 。递归前把存放进临时结果数组的值加到 sum 上，递归后减掉这个值。
+
+### AC代码
+```cpp
+class Solution {
+private:
+    vector<vector<int>> juice;
+    vector<int> temp;
+    int sum=0;
+    int startindex=1;
+    void backtrace(int k,int n,int startindex)
+    {
+        if(temp.size()==k)
+        {
+            if(sum==n)
+            {
+                juice.push_back(temp);
+            }
+            return;
+        }
+        for(int i=startindex;i<=min(9,n);i++)
+        {
+            temp.push_back(i);
+            sum+=i;
+            backtrace(k,n,i+1);
+            temp.pop_back();
+            sum-=i;
+        }
+    }
+public:
+    vector<vector<int>> combinationSum3(int k, int n) 
+    {
+        backtrace(k,n,startindex);
+        return juice;
+    }
+};
+```
+
+# 肆拾 39.组合总和
+题目：给你一个 无重复元素 的整数数组 candidates 和一个目标整数 target ，找出 candidates 中可以使数字和为目标数 target 的 所有 不同组合 ，并以列表形式返回。你可以按 任意顺序 返回这些组合。
+candidates 中的 同一个 数字可以 无限制重复被选取 。如果至少一个数字的被选数量不同，则两种组合是不同的。 
+对于给定的输入，保证和为 target 的不同组合数少于 150 个。
+
+示例 2：
+输入: candidates = [2,3,5], target = 8
+输出: [[2,2,2,2],[2,3,3],[3,5]]
+
+思路：这道题最大的变化在于：原数组无重复，但元素可以无限重复使用。但是仍然是组合而不是排列，所以每层循环依旧不是从原数组的第一个元素开始，改动是：从当前存放元素的下一位改为当前存放元素的位置。也就做到了当前位置的值可以重复使用。
+整理可得：
+- 递归函数的参数：已知数组、目标结果的位数、目标和、下次操作的起始位置 startindex 。
+- 递归函数的返回值：返回值为空，但在递归时需要存放符合要求的结果到结果集里面。
+- 递归函数的终止条件：当前的 sum 大于或等于 target ，区别是等于时要存放结果，而大于时不用。
+- 单层递归逻辑：对 for 循环的每个值，进行递归————对下一个数位进行 for 循环，直到 return 。递归前把存放进临时结果数组的值加到 sum 上，递归后减掉这个值。
+
+
+### AC代码
+```cpp
+class Solution {
+private:
+    int sum=0;
+    vector<vector<int>> juice;
+    vector<int> temp;
+    int startindex=0;
+    void backtrace(vector<int>& candidates, int target,int startindex)
+    {
+        if(sum == target)
+        {
+            juice.push_back(temp);
+            return ;
+        }
+        else if(sum>target)
+        {
+            return ;
+        }
+        else
+        {
+            for(int i=startindex;i<candidates.size();i++)
+            {
+                sum+=candidates[i];
+                temp.push_back(candidates[i]);
+                backtrace(candidates,target,i);
+                sum-=candidates[i];
+                temp.pop_back();
+
+            }
+        }
+    }
+public:
+    vector<vector<int>> combinationSum(vector<int>& candidates, int target) 
+    {
+        sort(candidates.begin(),candidates.end());
+        backtrace(candidates,target,0);
+        return juice;
+    }
+};
+```
+
+# 肆拾壹 40.组合总和Ⅱ
+题目：给定一个候选人编号的集合 candidates 和一个目标数 target ，找出 candidates 中所有可以使数字和为 target 的组合。
+candidates 中的每个数字在每个组合中只能使用 一次 。
+注意：解集不能包含重复的组合。 
+
+思路：这道题有了新的变化：原数组包含重复元素，但还不能有重复的组合。即不同位置如果有同一个值，那么只有这个元素不同的结果数组视为同一个。
+因此这道题的新增操作就是去重。所谓去重，其实就是使用过的元素不能重复选取。
+我在一开始做这道题时候搞混淆了概念，题目的意思是元素在同一个组合内是可以重复的，但两个组合不能相同。所以我们要去重的是同一树层（同一层 for 循环）上的“使用过”，同一根长树枝（多根连续的上下级树枝的连接）上的都是一个组合里的元素，不用去重。
+既然原数组的初始状态是无序的，那为了方便我自己对同一树层进行去重，我就要先把原数组进行排序，使其内的元素由小到大排列。
+去重，也就是判断元素是否重复，这里使用了原数组排序后最直接的方法———— candidates[i] == candidates[i - 1] 。
+此时还有最后一个疑问：我在 for 循环内给下一层递归传的 startindex 值是当前位置的后一位，也就是 i+1 ，那如果我下一层递归的第一个值与当前层 for 循环遍历到的值相同怎么办？
+我在复盘的时候才想清楚这个问题，这里使用了一个对 i>startindex 的判断来解决。由于我在当前层（a）的 for 循环中，给下一层（b）传的 startindex 值是当前位置的下一位，而且在下一层（b）的 for 循环伊始，我设置了一个局部变量 i 来接受 startindex 的值作为这一层（b） for 循环的起始位置。那么在这一层（b） for 循环的一开始， i>startindex 是不成立的，就说明这个位置是这一层（b）的起始位置，是不需要被去重的；之后 i 会自增，那么 i>startindex 就开始一直成立了，就说明随时可以开始进行本层的去重，一旦 candidates[i] == candidates[i - 1] 成立，就说明本层（b）遇到了一个重复元素，此时就跳过本次循环即可。这就完成了去重操作。
+整理可得：
+- 递归函数的参数：已知数组、目标结果的位数、目标和、下次操作的起始位置 startindex 。
+- 递归函数的返回值：返回值为空，但在递归时需要存放符合要求的结果到结果集里面。
+- 递归函数的终止条件：当前的 sum 大于或等于 target ，区别是等于时要存放结果，而大于时不用。
+- 单层递归逻辑：递归嵌套for + 去重
+
+
+### AC代码
+```cpp
+class Solution {
+private:
+    int sum=0;
+    vector<vector<int>> juice;
+    vector<int> temp;
+    void backtrace(vector<int>& candidates, int target , int startindex)
+    {
+        if(sum==target)
+        {
+            juice.push_back(temp);
+            return ;
+        }
+        else if(target<sum)
+        {
+            return;
+        }
+        else
+        {
+            for(int i=startindex;i<candidates.size();i++)
+            {
+                if(i>startindex && candidates[i] == candidates[i - 1])
+                {
+                    continue;
+                }
+                temp.push_back(candidates[i]);
+                sum+=candidates[i];
+                backtrace(candidates,target,i+1);
+                temp.pop_back();
+                sum-=candidates[i];
+            }
+        }
+    }
+public:
+    vector<vector<int>> combinationSum2(vector<int>& candidates, int target) 
+    {
+        temp.clear();
+        juice.clear();
+        sort(candidates.begin(),candidates.end());
+        backtrace(candidates,target,0);
+        return juice;
+    }
+};
+```
