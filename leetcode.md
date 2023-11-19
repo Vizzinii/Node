@@ -1839,3 +1839,116 @@ public:
     }
 };
 ```
+
+# 肆拾贰 131.分割回文串
+题目：给你一个字符串 s，请你将 s 分割成一些子串，使每个子串都是 回文串 。返回 s 所有可能的分割方案。回文串 是正着读和反着读都一样的字符串。
+
+示例 1：
+输入：s = "aab"
+输出：[["a","a","b"],["aa","b"]]
+
+思路：本质上还是对已给字符串的递归分割。区别在于，之前题目的 temp 是固定结果之一的一部分，在剩下的部分里面递归找到所有符合的另一部分；而这道题的 temp 实际上应该是连续的一个或多个字符，然后“清空 temp ”并在剩余的字符里面找到“符合要求的连续字符”，加起来作为一个符合的结果。
+我的理解是，这道题是把递归的逻辑更具象地表现出来了。之前的题目是从第一位开始循环，而循环体内包含递归。本质上就是当目前已知的部分符合条件时，就在这个地方设立分割点；当且仅当已知部分符合条件时，才进行递归操作，否则跳过递归直接循环到已知部分的下一种可能性。
+于是我总结出了回溯类题目的一个首先要思考的地方：从第一位开始循环 push_back() ，循环体内包含递归。当已知部分符合目标要求时，进行赋值和递归操作；否则跳过当前循环，把当前执行的位置的下一位 push_back() 进来。
+
+### AC代码
+```cpp
+class Solution {
+private:
+    vector<string> path;
+    vector<vector<string>> juice;
+    int startindex;
+    bool isPalindrome(const string& s, int start, int end) 
+    {
+     for (int i = start, j = end; i < j; i++, j--) 
+     {
+         if (s[i] != s[j]) 
+         {
+             return false;
+         }
+     }
+     return true;
+    }
+    void backtrace(string s,int startindex)
+    {
+        if(startindex==s.size())
+        {
+            juice.push_back(path);
+            return;
+        }
+        for(int i=startindex;i<s.size();i++)
+        {
+            if(isPalindrome(s,startindex,i))
+            {
+                string temp = s.substr(startindex, i - startindex + 1);
+                path.push_back(temp);
+            }
+            else
+            {
+                continue;
+            }
+            backtrace(s,i+1);
+            path.pop_back();
+        }
+    }
+public:
+    vector<vector<string>> partition(string s) 
+    {
+        backtrace(s,0);
+        return juice;
+    }
+};
+```
+
+# 肆拾叁 17.电话号码的字母组合
+题目：给定一个仅包含数字 2-9 的字符串，返回所有它能表示的字母组合。答案可以按 任意顺序 返回。给出数字到字母的映射与电话按键相同。注意 1 不对应任何字母。
+
+思路：先设立一个映射数组来存放 2~9 对应的字母，然后用回溯来代替暴力循环。
+这道题的特别之处在于： startindex 不再是直接指向当前执行递归的位置，而是要通过 startindex 得到下一个位置所要循环的字符串。
+
+### AC代码
+```cpp
+class Solution {
+private:
+    const string letterMap[10] = {
+    "", // 0
+    "", // 1
+    "abc", // 2
+    "def", // 3
+    "ghi", // 4
+    "jkl", // 5
+    "mno", // 6
+    "pqrs", // 7
+    "tuv", // 8
+    "wxyz", // 9
+};
+    string temp;
+    vector<string> juice;
+    void backtrace(string digits,int index)
+    {
+        if(digits=="""")
+        {
+            return;
+        }
+        if(index == digits.size())
+        {
+            juice.push_back(temp);
+            return;
+        }
+        int digit = digits[index]-'0';
+        string letter = letterMap[digit];
+        for(int i=0;i<letter.size();i++)
+        {
+            temp.push_back(letter[i]);
+            backtrace(digits,index+1);
+            temp.pop_back();
+        }
+    }
+public:
+    vector<string> letterCombinations(string digits) 
+    {
+        backtrace(digits,0);
+        return juice;
+    }
+};
+```
