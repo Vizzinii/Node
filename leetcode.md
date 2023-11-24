@@ -1952,3 +1952,216 @@ public:
     }
 };
 ```
+
+# 肆拾肆 131.分割回文串
+题目：给你一个字符串 s，请你将 s 分割成一些子串，使每个子串都是 回文串 。返回 s 所有可能的分割方案。回文串 是正着读和反着读都一样的字符串。
+
+示例：
+输入：s = "aab"
+输出：[["a","a","b"],["aa","b"]]
+
+思路：已知一个字符串，依旧把分割字符串的过程看成一棵树，那么本题要求的结果就是树的每一个子节点。因此得到结果的判断逻辑就是 startindex 来到字符串的最后一个位置。
+在一层递归的过程中，思路思路类似于深搜的思想：在遇到当前已有部分满足条件时，优先保持已有部分不动、去对余下的部分进行搜索判断，而不是对已有部分进行增改。
+这里对已有部分判断的算法是：使用字符串的 substr() 办法，起始位置是本层 for 循环的 startindex ，终止位置是当前位置 i 。当判断回文串的方法 isPalindrome(s,startindex,i) 成立时，就说明从 startindex 到 i 的子串是回文串，此时把这个子串放进临时结果数组内，从 i 的下一个位置开始进行新一轮子串的查找；若 isPalindrome(s,startindex,i) 不成立，则说明当前 for 循环中，这个位置的 i 使得 startindex 到 i 的子串不是回文串，因此不进行递归，直接跳过当前循环，执行当前层 for 循环的下一个数。当执行完本层的 for 循环后，对临时结果数组进行 pop_back() 操作。
+
+### AC代码
+```cpp
+class Solution {
+private:
+    vector<string> path;
+    vector<vector<string>> juice;
+    int startindex;
+    bool isPalindrome(const string& s, int start, int end) 
+    {
+     for (int i = start, j = end; i < j; i++, j--) 
+     {
+         if (s[i] != s[j]) 
+         {
+             return false;
+         }
+     }
+     return true;
+    }
+    void backtrace(string s,int startindex)
+    {
+        if(startindex==s.size())
+        {
+            juice.push_back(path);
+            return;
+        }
+        for(int i=startindex;i<s.size();i++)
+        {
+            if(isPalindrome(s,startindex,i))
+            {
+                string temp = s.substr(startindex, i - startindex + 1);
+                path.push_back(temp);
+            }
+            else
+            {
+                continue;
+            }
+            backtrace(s,i+1);
+            path.pop_back();
+        }
+    }
+public:
+    vector<vector<string>> partition(string s) 
+    {
+        backtrace(s,0);
+        return juice;
+    }
+};
+```
+
+# 肆拾伍 93.复原 IP 地址
+题目：有效 IP 地址 正好由四个整数（每个整数位于 0 到 255 之间组成，且不能含有前导 0），整数之间用 '.' 分隔。
+例如："0.1.2.201" 和 "192.168.1.1" 是 有效 IP 地址，但是 "0.011.255.245"、"192.168.1.312" 和 "192.168@1.1" 是 无效 IP 地址。
+给定一个只包含数字的字符串 s ，用以表示一个 IP 地址，返回所有可能的有效 IP 地址，这些地址可以通过在 s 中插入 '.' 来形成。你 不能 重新排序或删除 s 中的任何数字。你可以按 任何 顺序返回答案。
+
+思路：这道题同样是求遍历树的所有最终的可能性，也就是每个子节点。
+当已知部分满足 IP 地址的要求时，
+
+
+# 肆拾陆 78.子集
+题目：给你一个整数数组 nums ，数组中的元素 互不相同 。返回该数组所有可能的子集（幂集）。解集 不能 包含重复的子集。你可以按 任意顺序 返回解集。
+
+思路：本题要求的是所有可能的子集，而不是由子集组成的集合，因此不再是求所有的子节点，而是求遍历树中所有节点，从不包含元素的空集到包含所有元素的满集。
+首先注意到这个数组里面没有重复的元素，因此这里我的解法，大体上与之前“判断是否返回、再循环包含递归”的方法并无不同，只是这里得到结果的位置不再是在递归前。这里的思路是：只有已知部分满足条件才能进行下一层递归，因此可行的结果 temp 要在递归前放入结果数组 juice 中。又因为包含空集，因此还要把可行的结果 temp 放在它 push_back 进第一个元素前放入结果数组 juice 中。再有就是这里是需要得到全部子集，需要对原数组进行遍历，这里的返回条件便是 startindex 到达了原数组的最后位置。
+
+### AC代码
+```cpp
+class Solution {
+private:
+    
+    vector<int> temp;
+    vector<vector<int>> juice;
+    void backtrace(vector<int>& nums , int startindex)
+    {
+        juice.push_back(temp);
+        if(startindex == nums.size())
+        {
+            return;
+        }
+        
+        for(int i=startindex;i<nums.size();i++)
+        {
+            temp.push_back(nums[i]);
+            //juice.push_back(temp);
+            backtrace(nums,i+1);
+            temp.pop_back();
+        }
+    }
+public:
+    vector<vector<int>> subsets(vector<int>& nums) 
+    {
+        backtrace(nums,0);
+        return juice;
+    }
+};
+```
+
+# 肆拾柒 90.子集Ⅱ
+题目：给你一个整数数组 nums ，其中可能包含重复元素，请你返回该数组所有可能的子集（幂集）。解集 不能 包含重复的子集。返回的解集中，子集可以按 任意顺序 排列。
+
+示例：
+输入：nums = [1,2,2]
+输出：[[],[1],[1,2],[1,2,2],[2],[2,2]]
+
+思路：这道题唯一的不同之处：原数组的元素可能重复。，因此我需要进行去重操作。
+去重是在整个函数的哪个部分进行去重呢？想想看，要求是子集不能重复，而不是子集内的元素不能重复。因此是在 for 循环体内进行去重，而不是在往下递归时去重。
+有了思路就好做很多了，我只需要在每个 for 循环一开始的时候进行一个判断：判断当前循环到的元素是否在本层里面已经被使用过了即可。当然还要搭配一步“对原数组进行排序”的操作，这样就能保证所有重复的元素在遍历树的同一层里只会被使用一次。
+
+### AC代码
+```cpp
+class Solution {
+private:
+    
+    vector<int> temp;
+    vector<vector<int>> juice;
+    void backtrace(vector<int>& nums , int startindex)
+    {
+        juice.push_back(temp);
+        if(startindex == nums.size())
+        {
+            return;
+        }
+        
+        for(int i=startindex;i<nums.size();i++)
+        {   
+            if(i > startindex && nums[i] == nums[i-1])
+            {
+                continue;
+            }
+            temp.push_back(nums[i]);
+            backtrace(nums,i+1);
+            temp.pop_back();
+            
+        }
+    }
+public:
+    vector<vector<int>> subsetsWithDup(vector<int>& nums) 
+    {
+        sort(nums.begin(),nums.end());
+        backtrace(nums,0);
+        return juice;
+    }
+};
+```
+# 肆拾捌 491.递增子序列
+题目：给你一个整数数组 nums ，找出并返回所有该数组中不同的递增子序列，递增子序列中 至少有两个元素 。你可以按 任意顺序 返回答案。数组中可能含有重复元素，如出现两个整数相等，也可以视作递增序列的一种特殊情况。
+
+示例：
+输入：nums = [4,6,7,7]
+输出：[[4,6],[4,6,7],[4,6,7,7],[4,7],[4,7,7],[6,7],[6,7,7],[7,7]]
+
+思路：提炼出所有的条件:递增、至少两个元素、不递减序列。
+第一点，这里同样要在递归前且在新一个元素前把临时结果数组 temp 放入结果数组 juice 中，且这里可以满足一个条件：至少两个元素。
+第二点，要得到边界条件，也就是什么时候返回呢？由于这道题是当已知部分满足条件时往下递归，因此边界条件就是 startindex 来到原数组最后一位的下一位。
+第三点，想想看 [1,2,1,1] 的情况，此时如果按照之前的普通解法，会出现第一个 1 已经得到 [1,1] 、 [1,1,1] 的子序列情况下，第二个 1 仍然会得到 [1,1] 的结果，显然这是不应该存在的。怎么解决呢？很简单，我让递归不递减、而循环不重复即可，即第一个 1 只会得到 [1,1,1] 的结果，在第一个 1 的 for 循环遍历到第三个 1 的时候进行 continue ，避免因同一层的重复元素而得到相同的结果。即在 for 循环内进行去重。但这里的去重明显比以往的题目复杂，因为这里的元素出现是无序的，不能按照“是否与循环到的前一个元素相同”的标准来判断。于是我选择使用一个 uesd 集合（数组也可以，依据脏位来判断）来记录同一层内已经被使用过的元素。当这个元素在本层是第一次出现时，进行递归；否则 continue 。
+
+### AC代码
+```cpp
+class Solution {
+private:
+    int startindex;
+    vector<vector<int>> juice;
+    vector<int> temp;
+    void backtrace(vector<int>& nums , int startindex)
+    {
+        if(temp.size()>1)
+        {
+            juice.push_back(temp);
+        }
+
+        if(startindex == nums.size())
+        {
+            return;
+        }
+        unordered_set<int> used;
+        for(int i=startindex;i<nums.size();i++)
+        {
+            if(i>startindex && nums[i]==nums[i-1] || used.find(nums[i])!=used.end())
+            {
+                continue;
+            }
+            if(startindex>0  )
+            {
+                if(nums[i]<temp[temp.size()-1])
+                {
+                    continue;
+                }
+            }
+            used.insert(nums[i]);
+            temp.push_back(nums[i]);
+            backtrace(nums,i+1);
+            temp.pop_back();
+        }
+    }
+public:
+    vector<vector<int>> findSubsequences(vector<int>& nums)
+    {
+        backtrace(nums,0);
+        return juice;
+    }
+};
+```
