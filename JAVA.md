@@ -1,3 +1,19 @@
+## 作用域
+全局变量可以不赋值，但是局部变量没有默认值，所以必须赋值之后才能使用。局部变量的作用域是定义它的代码块。
+
+访问变量时遵循就近原则。
+
+属性可以加修饰符，但是局部变量不能加修饰符。
+
+## 访问修饰符
+默认修饰符下，同包内可以访问，子类不可访问；其他情况下同包等同于子类。
+
+
+
+
+
+
+
 ## 顺序语句
 
 方法调用：同cpp
@@ -568,4 +584,12 @@ getPriority()  //获取线程的优先级。
 sleep()        //在指定的毫秒数内让当前正在执行的程序休眠。（暂停执行）
 interrupt()    //中断线程。不是终止线程。
 // sleep()  方法和 interrupt() 方法配套使用，interrupt() 用来中止休眠，在主线程中直接阻塞调用，相当于提前结束子线程的休眠。
+```
+
+
+
+```java
+public List<List<String>> groupAnagrams(String[] strs) {
+       return new ArrayList<>(Arrays.stream(strs).collect(Collectors.groupingBy(s -> s.chars().sorted().collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append).toString())).values());
+   }
 ```
